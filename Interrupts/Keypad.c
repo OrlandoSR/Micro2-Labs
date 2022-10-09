@@ -92,8 +92,8 @@ int main(void)
 //	        if(prev != i){
 //	            REFRESH;
 //	        }
-	        write_char(i);
-	        __delay_cycles(1000000);
+	        if(i != '#'){write_char(i);}
+	        __delay_cycles(500000);
 	        update = 0;
 	    }
 	}
@@ -104,11 +104,17 @@ void decode(){
     switch(SCAN_CODE){
         case (ROW4):
             if(RETURN_CODE == COL1){
+                REFRESH;
                 i = '*';
             }else if(RETURN_CODE == COL2){
                 i = '0';
             }
             else if(RETURN_CODE == COL3){
+                if(pos < 40) {
+                    move_cursor(40);
+                }else{
+                    move_cursor(0);
+                }
                 i = '#';
             }
         break;
