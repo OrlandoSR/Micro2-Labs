@@ -19,16 +19,16 @@ int main(void)
             TB0CTL |= CNTL_0;           //Select counter length to 16-bit
             TB0CCR0 |= 11;              //Compare register setup // 33 , 16 , 11 , 8 , 6
 
-    //Setup TBx overflow IRQ
-            //Local enable for overflow TB0 |= TBIE;
-            //Enable maskable IRQs
-            //Clear IRQ flags TB0CTL |= TBIFG;
+    //Setup TB0 compare IRQ
+            TB0CCTL0 |= CCIE;           //Local enable for CCR0
+            __enable_interrupt();       //Enable maskable IRQs
+            TB0CCTL0 &=~ CCIFG;         //Clear IRQ flags TB0CTL |= CCIFG;
 
     while(1){
-        if(TB0CCTL0 & CCIFG){
-            P1OUT ^= BIT4;
-            TB0CCTL0 &=~ CCIFG;
-        }
+//        if(TB0CCTL0 & CCIFG){
+//            P1OUT ^= BIT4;
+//            TB0CCTL0 &=~ CCIFG;
+//        }
     }
 
 
@@ -36,9 +36,10 @@ int main(void)
 }
 
 //----------------------------ISRs-----------------------------------//
-#pragma vector = TIMER0_B1_VECTOR
-__interrupt void ISR_Timer_B0(void){
-
+#pragma vector = TIMER0_B0_VECTOR
+__interrupt void ISR_Timer_B0_CCR0(void){
+    P1OUT ^= BIT4;
+    TB0CCTL0 &=~ CCIFG;
 }
 
 
