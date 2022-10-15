@@ -32,7 +32,7 @@
 #define DISPLAY_F (SEGD | SEGC | SEGB)
 
 volatile unsigned int j = 0;
-int update = 0;
+int display = 0;
 void segment_v(int value);
 
 /*
@@ -50,59 +50,38 @@ int main(void)
 
     //Setup Ports
     P4DIR |= 0xFF;
-    P5DIR |= (BIT0 | BIT1);    //Enable 7s_1 and 7s_2 Port's (Control Signal)
+    P5DIR |= (BIT0 | BIT1);    //Enable 7s_1 and 7s_2 Port's (Control Signal's)
 
-    //Timer setup
+    //Timer setup B0
     TB0CTL |= TBCLR;            //Reset timer in register TBxCTL |= TBCLR;
     TB0CTL |= TBSSEL_1;         //Select clock source TBSSEL |= TBSSEL_ACLK;
     TB0CTL |= MC__UP;           //Select Timer/Counter in up mode to CCR0
     TB0CTL |= CNTL_0;           //Select counter length to 16-bit
-    TB0CCR0 |= 2048;            //Compare register setup // 33 , 16 , 11 , 8 , 6
+    TB0CCR0 |= 4096;            //Compare register setup
     TB0CTL |= ID__8;            //Set up prescaler div-8
+
+    //Timer setup A0
+    TA0CTL |= TBCLR;            //Reset timer in register TBxCTL |= TBCLR;
+    TA0CTL |= TBSSEL_1;         //Select clock source TBSSEL |= TBSSEL_ACLK;
+    TA0CTL |= MC__UP;           //Select Timer/Counter in up mode to CCR0
+    TA0CTL |= CNTL_0;           //Select counter length to 16-bit
+    TA0CCR0 |= 68;              //Compare register setup
+    TA0CTL |= ID__8;            //Set up prescaler div-8
 
     //Setup TB0 compare IRQ
     TB0CCTL0 |= CCIE;           //Local enable for CCR0
     __enable_interrupt();       //Enable maskable IRQs
     TB0CCTL0 &=~ CCIFG;         //Clear IRQ flags TB0CTL |= CCIFG;
 
+    //Setup TB0 compare IRQ
+    TA0CCTL0 |= CCIE;           //Local enable for CCR0
+    __enable_interrupt();       //Enable maskable IRQs
+    TA0CCTL0 &=~ CCIFG;         //Clear IRQ flags TB0CTL |= CCIFG;
+
+    P5OUT |= BIT0;                       //7s_1 begins enabled
+
     while(1){
-        if(update){
-
-            if(j < 16){
-
-                //Turns off control signals
-                P5OUT &=~ (BIT0 | BIT1);
-
-                //Enables Iteration
-                P4OUT &=~ 0xFF;
-                segment_v(j);  //Iterate's through 0-9 & A-F segment values
-                j++;
-
-                //Turns on control signal 7s_1
-                P5OUT |= (BIT0);
-
-                //Delay Loop
-                __delay_cycles(1000000);
-
-                //Turns off control signals
-                P5OUT &=~ (BIT0 | BIT1);
-
-                //Turns on control signal 7s_2
-                P5OUT |= (BIT1);
-
-                //Delay Loop
-                __delay_cycles(1000000);
-
-            }
-            else {
-                j = 0;
-            }
-
-            update = 0;
-        }
     }
-
-//    return 0;
 }
 
 void segment_v(int value){
@@ -161,7 +140,34 @@ void segment_v(int value){
 //----------------------------ISRs-----------------------------------//
 #pragma vector = TIMER0_B0_VECTOR
 __interrupt void ISR_Timer_B0_CCR0(void){
-    update = 1;
-    P1OUT ^= BIT4;
+
+    if(j < 16){
+    //Next Value
+    j++;
+    }
+    else{j=0;}
     TB0CCTL0 &=~ CCIFG;
+
+}
+
+#pragma vector = TIMER0_A0_VECTOR
+__interrupt void ISR_Timer_A0_CCR0(void){
+    //Change display
+    //Turns off control signals
+    display = (P5OUT & BIT0);   //Checks if display 1 was ON;
+    P5OUT &=~ (BIT0 | BIT1);
+        P4OUT &=~ 0xFF;
+    segment_v(j);  //Iterate's through 0-9 & A-F segment value
+
+    //Checks which control signal is ON
+    if(display){
+      //Turns on control signal 7s_2
+        P5OUT |= (BIT1);
+    }
+    else{
+            //Turns on control signal 7s_1
+        P5OUT |= (BIT0);
+    }
+
+    TA0CCTL0 &=~ CCIFG;
 }
