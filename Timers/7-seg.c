@@ -1,5 +1,6 @@
 #include <msp430.h> 
 
+
 /**
  * main.c
  */
@@ -49,6 +50,7 @@ int main(void)
 
     //Setup Ports
     P4DIR |= 0xFF;
+    P5DIR |= (BIT0 | BIT1);    //Enable 7s_1 and 7s_2 Port's
 
     //Timer setup
     TB0CTL |= TBCLR;            //Reset timer in register TBxCTL |= TBCLR;
@@ -67,7 +69,7 @@ int main(void)
         if(update){
 
             if(j < 10){              //Iterate's through 0-9 segment values
-                P4OUT &=~ 0xFF;      //Allows display to "clear"
+                P4OUT &=~ 0xFF;
                 segment_v(j);
                 j++;
             }
@@ -113,6 +115,24 @@ void segment_v(int value){
                break;
         case (9):
                P4OUT |= (BIT5 | BIT3);
+               break;
+        case (10): //A
+               P4OUT |= (BIT3);
+               break;
+        case (11): //B
+               P4OUT |= (BIT1 | BIT0);
+               break;
+        case (12): //C
+               P4OUT |= (BIT6 | BIT2 | BIT1 | BIT0);
+               break;
+        case (13): //D
+               P4OUT |= (BIT6 | BIT0);
+               break;
+        case (14): //E
+               P4OUT |= (BIT2 | BIT1);
+               break;
+        case (15): //F
+               P4OUT |= (BIT3 | BIT2 | BIT1);
                break;
     }
 }
