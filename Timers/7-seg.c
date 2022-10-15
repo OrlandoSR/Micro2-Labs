@@ -57,7 +57,7 @@ int main(void)
     TB0CTL |= TBSSEL_1;         //Select clock source TBSSEL |= TBSSEL_ACLK;
     TB0CTL |= MC__UP;           //Select Timer/Counter in up mode to CCR0
     TB0CTL |= CNTL_0;           //Select counter length to 16-bit
-    TB0CCR0 |= 2048;            //Compare register setup // 33 , 16 , 11 , 8 , 6
+    TB0CCR0 |= 4096;            //Compare register setup // 33 , 16 , 11 , 8 , 6
     TB0CTL |= ID__8;            //Set up prescaler div-8
 
     //Setup TB0 compare IRQ
