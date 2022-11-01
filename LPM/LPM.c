@@ -104,10 +104,15 @@ int main(void)
     __enable_interrupt();       //Enable maskable IRQs
     TB0CCTL0 &=~ CCIFG;         //Clear IRQ flags TB0CTL |= CCIFG;
 
+
     //LPM
-    __low_power_mode_0();
+    __low_power_mode_0(); //Set to turn on LPWM
 
     while(1){
+
+       //This should not work in LPWM
+       P6DIR |= BIT7;  //LED4
+
 
     }
 
