@@ -81,7 +81,7 @@ int main(void)
       WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
 
     // Button setup PB3_1 - PB4_1 , P7.3 - P7.5
-    P7DIR &= ~(BIT3 | BIT5);                     // buttons as input
+    P7DIR &= ~(BIT3 | BIT5);            // buttons as input
     P7REN |= BIT5;                      // resistor enabled
     P7OUT |= BIT5;                      // pull-up resistor
 
@@ -127,21 +127,26 @@ void display_string(int row){
 #pragma vector = TIMER0_B0_VECTOR
 __interrupt void ISR_Timer_B0_CCR0(void){
 
-    if(!(P7IN & BIT3)){
-      direction = 0;
-    }
-    else if(!(P7IN & BIT5)){
-      direction = 1;
+    if(i < 16){
+        if(!(P7IN & BIT3)){
+          direction = 0;
+        }
+        else if(!(P7IN & BIT5)){
+          direction = 1;
+        }
+
+        if(direction){
+          display_string(40);
+        }
+        else {
+          display_string(0);
+        }
+
+         TB0CCTL0 &=~ CCIFG;
+    }else{
+        i = 0;
     }
 
-    if(direction){
-      display_string(40);
-    }
-    else {
-      display_string(0);
-    }
-
-     TB0CCTL0 &=~ CCIFG;
 
 }
 
@@ -252,5 +257,4 @@ void init(){
     display_on();
     _delay_cycles(100000);
 }
-
 
