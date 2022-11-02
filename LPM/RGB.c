@@ -1,29 +1,22 @@
 #include <msp430.h> 
 
 #define MAX_TIME  (1000)
-#define MAX_RGB 255
+#define THIRTY (117)
+#define TWO_TWENTY_TWO (870)
+#define TWO_SEVEN_TEEN (850)
+#define TWO_FIFTHY_TWO (988)
+#define TWO_FOURTY (941)
+#define TWO_HUNDRED (784)
+#define FOURTY (156)
+#define ONE_TWENTY_TRHEE (482)
+#define THIRTY_THREE (129)
 
 #define RED_RGB TA0CCR4
 #define GREEN_RGB TA0CCR3
 #define BLUE_RGB TA0CCR1
 
-int red = 500;
-int green = 500;
-int blue = 500;
 
 volatile unsigned long int i = 1;
-
-
-int RGB_to_CCR(int value){
-  int CCR_value = 0;
-
-  if(value > 255){ return MAX_TIME; }
-  if(value < 0){ return 0;}
-
-  CCR_value = ((value/255) * 1000);
-
-  return CCR_value;
-}
 
 
 int main(void)
@@ -48,9 +41,9 @@ int main(void)
 
     //Set frequency values
     TA0CCR0  = (MAX_TIME);
-    TA0CCR1  = (blue);
-    TA0CCR3  = (green);
-    TA0CCR4  = (red);
+    TA0CCR1  = (0);
+    TA0CCR3  = (0);
+    TA0CCR4  = (0);
 
     //Set PWM output mode
     TA0CCTL1 = (OUTMOD_7);
@@ -69,54 +62,62 @@ int main(void)
 //ISRs
 #pragma vector = PORT2_VECTOR
 __interrupt void ISR_P2_S1(void){
+  _delay_cycles(150000);
   switch(i)
   {
+    case 0:
+        RED_RGB = 0;
+        GREEN_RGB = 0;
+        BLUE_RGB = 0;
+        break;
     case 1:
-        RED_RGB = RGB_to_CCR(0);
-        GREEN_RGB = RGB_to_CCR(0);
-        BLUE_RGB = RGB_to_CCR(255);
+        RED_RGB = 0;
+        GREEN_RGB = 0;
+        BLUE_RGB = MAX_TIME;
         break;
     case 2:
-        RED_RGB = RGB_to_CCR(0);
-        GREEN_RGB = RGB_to_CCR(255);
-        BLUE_RGB = RGB_to_CCR(0);
+        RED_RGB = 0;
+        GREEN_RGB = MAX_TIME;
+        BLUE_RGB = 0;
         break;
     case 3:
-        RED_RGB = RGB_to_CCR(255);
-        GREEN_RGB = RGB_to_CCR(0);
-        BLUE_RGB = RGB_to_CCR(0);
+        RED_RGB = MAX_TIME;
+        GREEN_RGB = 0;
+        BLUE_RGB = 0;
         break;
     case 4:
-        RED_RGB = RGB_to_CCR(255);
-        GREEN_RGB = RGB_to_CCR(30);
-        BLUE_RGB = RGB_to_CCR(217);
+        RED_RGB = MAX_TIME;
+        GREEN_RGB = THIRTY;
+        BLUE_RGB = TWO_SEVEN_TEEN;
         break;
     case 5:
-        RED_RGB = RGB_to_CCR(30);
-        GREEN_RGB = RGB_to_CCR(222);
-        BLUE_RGB = RGB_to_CCR(252);
+        RED_RGB = THIRTY;
+        GREEN_RGB = TWO_TWENTY_TWO;
+        BLUE_RGB = TWO_FIFTHY_TWO;
         break;
     case 6:
-        RED_RGB = RGB_to_CCR(240);
-        GREEN_RGB = RGB_to_CCR(200);
-        BLUE_RGB = RGB_to_CCR(40);
+        RED_RGB = TWO_FOURTY;
+        GREEN_RGB = TWO_HUNDRED;
+        BLUE_RGB = FOURTY;
         break;
     case 7:
-        RED_RGB = RGB_to_CCR(255);
-        GREEN_RGB = RGB_to_CCR(123);
-        BLUE_RGB = RGB_to_CCR(33);
+        RED_RGB = MAX_TIME;
+        GREEN_RGB = ONE_TWENTY_TRHEE;
+        BLUE_RGB = THIRTY_THREE;
         break;
     case 8:
-        RED_RGB = RGB_to_CCR(255);
-        GREEN_RGB = RGB_to_CCR(255);
-        BLUE_RGB = RGB_to_CCR(255);
+        RED_RGB = MAX_TIME;
+        GREEN_RGB = MAX_TIME;
+        BLUE_RGB = MAX_TIME;
         break;
     default:
-        RED_RGB = RGB_to_CCR(0);
-        GREEN_RGB = RGB_to_CCR(0);
-        BLUE_RGB = RGB_to_CCR(0);
+        RED_RGB = 0;
+        GREEN_RGB = 0;
+        BLUE_RGB = 0;
         i = 1;
   }
+
+  _delay_cycles(150000);
   i++;
   P2IFG &=~ BIT6;         // clear IFG for the bit of the port
 }
