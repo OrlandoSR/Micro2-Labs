@@ -39,11 +39,8 @@ int main(void)
     P1DIR |= (BIT5|BIT2|BIT4);
     P1SEL |= (BIT5|BIT2|BIT4);
 
-    //Set frequency values
+    //Set Initial frequency values
     TA0CCR0  = (MAX_TIME);
-    TA0CCR1  = (0);
-    TA0CCR3  = (0);
-    TA0CCR4  = (0);
 
     //Set PWM output mode
     TA0CCTL1 = (OUTMOD_7);
