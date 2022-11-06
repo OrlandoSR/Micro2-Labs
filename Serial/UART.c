@@ -101,11 +101,6 @@ int main(void)
     //Pin Configuration
     P9SEL |= (BIT4 | BIT5);
 
-    //Not sure
-//    P9DIR |= BIT4;
-//    P9DIR &=~ BIT5;
-
-
 
     while(1){
       if(UCTXIFG & UCA2IFG){//Check if Tx buffer is empty
