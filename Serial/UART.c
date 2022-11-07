@@ -65,9 +65,14 @@
  *                  Prescaler * (divider + 1)
  */
 
+volatile unsigned long int i = 0;
+
+unsigned char buff[1][1] = {'A'};
+
 
 int main(void)
 {
+
     WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
 
 /*  UART Configuration
@@ -88,10 +93,13 @@ int main(void)
     UCA2CTL0 &=~ (UCPAR | UCMSB | UC7BIT | UCSPB); //Configure parity, endianness, data size and stop bits
 
     //UCA2CTL1 (Control Register 1)
-    UCA2CTL1 |= UCSSEL__SMCLK;    //BRCLK selected is SMCLK 1MHz
+    UCA2CTL1 |= UCSSEL__ACLK;    //BRCLK selected is ACLK 32.768MHz
 
     //UCA2BRW   (Baud Rate Select [use table above] )
-    UCA2BRW = 104;            //Set Baud Rate to 9600 / This edits the 16-bit word insted of two 8-bit registers
+    UCA2BRW = 3;            //Set Baud Rate to 9600 / This edits the 16-bit word insted of two 8-bit registers
+
+    //UCA2MCTL
+    UCA2MCTL |= (BIT1 | BIT2);        //Set Baud Rate
 
     //UCA2IE    (Interrupt Enable Register)
 //    UCA2IE = UCTXIE;       //Enable Tx interrupt
