@@ -1,4 +1,5 @@
 #include <msp430.h> 
+#include <ctype.h>
 
 
 /**
@@ -56,10 +57,16 @@ void write_char (unsigned char data);
 void write_string(char *s);
 //---------------------------------------------//
 
-#define MAX_CHAR 80
+volatile unsigned long int j = 0;
+volatile unsigned long int out_on = 0;
+void string_in(char c);     //Enter characters recieved in the buffer
+void serial_write();        //Write characters in buffer
 
-unsigned char buff[] = "Hello World!\n";
-unsigned char rbuff[MAX_CHAR];
+
+#define MAX_CHAR 16
+
+unsigned char txbuff[MAX_CHAR];
+unsigned char rxbuff[MAX_CHAR];
 
 
 int main(void)
@@ -113,9 +120,37 @@ int main(void)
 
 
     while(1){
-        //Do something
+        serial_write();
     }
 }
+
+void string_in(char c){
+    if(c == '*'){
+        display_clear();
+        return;}
+
+    rxbuff[j] = c;
+    write_char(c);
+    j++;
+    if(j > 15){
+        j = 0;
+        out_on = 1;
+        //Call other function
+    }
+}
+
+void serial_write(){
+
+    if((UCA2IFG & BIT1) && out_on){   //Check if Tx buffer is empty
+             UCA2TXBUF = toupper(rxbuff[j]);  //Send data to tx buffer
+             j++;
+             if(j > 15) {
+                 j = 0;
+                 out_on = 0;
+                 UCA2TXBUF = '\n';
+             } //Reset index to zero when out of array bounds
+         }
+    }
 
 
 //----------------------ISR--------------------//
@@ -123,7 +158,7 @@ int main(void)
 __interrupt void ISR_Rx(void){
     // do whatever
     if(UCA2IFG & BIT0){ // A character has been recieved in buffer
-        write_char(UCA2RXBUF);
+        string_in(UCA2RXBUF);
     }
 
     UCA2IFG &=~ BIT0;   // Clear interrupt flag (optional for this)
