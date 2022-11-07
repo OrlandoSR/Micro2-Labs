@@ -16,7 +16,7 @@
  * MCU Baud Rate Settings (Family Guide p.952)
  *  BRCLK Frequency | Baud Rate | UCBRx | UCBRSx | USBRFx
  *      32,768          9600        3       3       0
- *    1,000,000         9600        104     1       0
+ *    1,048,576         9600        109     2       0
  *
  */
 
@@ -67,7 +67,7 @@
 
 volatile unsigned long int i = 0;
 
-unsigned char buff[1][1] = {'A'};
+unsigned char buff[] = "Hello World!\n";
 
 
 int main(void)
@@ -93,32 +93,25 @@ int main(void)
     UCA2CTL0 &=~ (UCPAR | UCMSB | UC7BIT | UCSPB); //Configure parity, endianness, data size and stop bits
 
     //UCA2CTL1 (Control Register 1)
-    UCA2CTL1 |= UCSSEL__ACLK;    //BRCLK selected is ACLK 32.768MHz
+    UCA2CTL1 |= UCSSEL__SMCLK;    //BRCLK selected is SMCLK
 
     //UCA2BRW   (Baud Rate Select [use table above] )
-    UCA2BRW = 3;            //Set Baud Rate to 9600 / This edits the 16-bit word insted of two 8-bit registers
+    UCA2BRW = 109;            //Set Baud Rate to 9600 / This edits the 16-bit word insted of two 8-bit registers
 
     //UCA2MCTL
-    UCA2MCTL |= (BIT1 | BIT2);        //Set Baud Rate
+    UCA2MCTL |= (BIT2);        //Set Baud Rate
 
-    //UCA2IE    (Interrupt Enable Register)
-//    UCA2IE = UCTXIE;       //Enable Tx interrupt
+    UCA2CTL1 &=~ UCSWRST;   //Disable modificattion to all USCI control registers
 
-  UCA2CTL1 &=~ UCSWRST;   //Disable modificattion to all USCI control registers
-
-  //Pin Configuration
-  P9SEL |= (BIT4 | BIT5);
-
-//    Not sure
-    P9DIR |= BIT4;
-    P9DIR &=~ BIT5;
-
+    //Pin Configuration
+    P9SEL |= (BIT4 | BIT5);
 
 
     while(1){
       if(UCA2IFG & BIT1){   //Check if Tx buffer is empty
-//          __delay_cycles(1000000);
-          UCA2TXBUF = 'A';  //Send data to tx buffer
+          UCA2TXBUF = buff[i];  //Send data to tx buffer
+          i++;
+          if(i > ((sizeof(buff)/sizeof(buff[0])) - 1)){ i = 0; } //Reset index to zero when out of array bounds
       }
     }
 }
