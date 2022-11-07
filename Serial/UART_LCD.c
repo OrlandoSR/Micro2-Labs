@@ -71,6 +71,10 @@ unsigned char rxbuff[MAX_CHAR];
 
 int main(void)
 {
+    //Init LCD pins
+    P3DIR |= (BIT4 | BIT5 | BIT6 | BIT7);
+    P4DIR |= (BIT0 | BIT1 | BIT2 | BIT3);
+    P5DIR |= (BIT0 | BIT1 | BIT5);
 
     WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
 
@@ -111,11 +115,6 @@ int main(void)
     //Pin Configuration
     P9SEL |= (BIT4 | BIT5);
 
-    //Init LCD pins
-    P3DIR |= (BIT4 | BIT5 | BIT6 | BIT7);
-    P4DIR |= (BIT0 | BIT1 | BIT2 | BIT3);
-    P5DIR |= (BIT0 | BIT1 | BIT5);
-
     init();
 
 
@@ -127,7 +126,9 @@ int main(void)
 void string_in(char c){
     if(c == '*'){
         display_clear();
-        return;}
+        j = 0;
+        return;
+    }
 
     rxbuff[j] = c;
     write_char(c);
@@ -140,7 +141,6 @@ void string_in(char c){
 }
 
 void serial_write(){
-
     if((UCA2IFG & BIT1) && out_on){   //Check if Tx buffer is empty
              UCA2TXBUF = toupper(rxbuff[j]);  //Send data to tx buffer
              j++;
