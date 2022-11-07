@@ -68,8 +68,8 @@
 
 int main(void)
 {
-	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
-	
+    WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
+
 /*  UART Configuration
     *   Configure baud control registers
     *   Select clock source, specify prescaler and divider
@@ -78,32 +78,38 @@ int main(void)
     *   Configure Tx and Rx pins selected to work with UART module
 */
 
-	//USCI control registers
+    //USCI control registers
 
-	UCA2CTL1 |= UCSWRST;    //Enable modificattion to all USCI control registers
+    UCA2CTL1 |= UCSWRST;    //Enable modificattion to all USCI control registers
 
-	//UCA2CTL0 (Control Register 0)
-	UCA2CTL0 &=~ UCSYNC;    //Set asynchronous mode
-	UCA2CTL0 |= UCMODE_0;   //Set UART mode
-	UCA2CTL0 &=~ (UCPAR | UCMSB | UC7BIT | UCSPB); //Configure parity, endianness, data size and stop bits
+    //UCA2CTL0 (Control Register 0)
+    UCA2CTL0 &=~ UCSYNC;    //Set asynchronous mode
+    UCA2CTL0 |= UCMODE_0;   //Set UART mode
+    UCA2CTL0 &=~ (UCPAR | UCMSB | UC7BIT | UCSPB); //Configure parity, endianness, data size and stop bits
 
-	//UCA2CTL1 (Control Register 1)
-	UCA2CTL1 |= UCSSEL__SMCLK;    //BRCLK selected is SMCLK 1MHz
+    //UCA2CTL1 (Control Register 1)
+    UCA2CTL1 |= UCSSEL__SMCLK;    //BRCLK selected is SMCLK 1MHz
 
-	//UCA2BRW   (Baud Rate Select [use table above] )
-	UCA2BRW = 104;            //Set Baud Rate to 9600 / This edits the 16-bit word insted of two 8-bit registers
+    //UCA2BRW   (Baud Rate Select [use table above] )
+    UCA2BRW = 104;            //Set Baud Rate to 9600 / This edits the 16-bit word insted of two 8-bit registers
 
-	//UCA2IE    (Interrupt Enable Register)
-	UCA2IE |= UCTXIE;       //Enable Tx interrupt
+    //UCA2IE    (Interrupt Enable Register)
+//    UCA2IE = UCTXIE;       //Enable Tx interrupt
 
-    UCA2CTL1 &=~ UCSWRST;   //Disable modificattion to all USCI control registers
+  UCA2CTL1 &=~ UCSWRST;   //Disable modificattion to all USCI control registers
 
-    //Pin Configuration
-    P9SEL |= (BIT4 | BIT5);
+  //Pin Configuration
+  P9SEL |= (BIT4 | BIT5);
+
+//    Not sure
+    P9DIR |= BIT4;
+    P9DIR &=~ BIT5;
+
 
 
     while(1){
-      if(UCTXIFG & UCA2IFG){//Check if Tx buffer is empty
+      if(UCA2IFG & BIT1){   //Check if Tx buffer is empty
+//          __delay_cycles(1000000);
           UCA2TXBUF = 'A';  //Send data to tx buffer
       }
     }
