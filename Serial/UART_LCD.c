@@ -124,6 +124,7 @@ int main(void)
 }
 
 void string_in(char c){
+    if(isdigit(c)){return;}
     if(c == '*'){
         display_clear();
         j = 0;
