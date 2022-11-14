@@ -11,14 +11,18 @@
 //Analog input P7.6
 
 volatile unsigned long int ADC_value = 0;
-volatile unsigned long int j, k = 0;
+volatile unsigned long int j, k, r = 0;
 
 void word_to_string(volatile unsigned long int  number);
 void tostring(char [], int);
 void decToHexa(volatile unsigned long int n);
 
+void write_decimal(volatile unsigned long int number);
+void write_hexa_decimal(volatile unsigned long int number);
+
 //----------------LCD----------------------------//
 unsigned char str[4];
+char dec[16];
 int pos = 0;
 volatile unsigned int refresh = 0;
 volatile unsigned long int i = 0;
@@ -91,42 +95,59 @@ int main(void)
         ADC12CTL0 |= (ADC12ENC_L | ADC12SC_L);
 
         if(refresh){
-            decToHexa(ADC_value);
-            for (k = 1; k <= 4; k++){
-                write_char(str[4-k]);
-            }
-            move_cursor(0);
+
+            //Write Hexadecimal Value
+            write_hexa_decimal(ADC_value);
+            //Write Decimal Value
+            write_decimal(ADC_value);
+
             refresh = 0;
         }
     }
 }
 
-// //Decimal
-// void word_to_string(volatile unsigned long int number){
-//     for(j = 0; j < 16; j++){
-//       tostring(str,(number));
-//     }
-// }
+void write_hexa_decimal(volatile unsigned long int number){
+    //Write Hexadecimal Value
+    move_cursor(0);
+    decToHexa(ADC_value);
+    for (k = 1; k <= 4; k++){
+        write_char(str[4-k]);
+    }
+}
 
-// //Change Value tostring
-// void tostring(char str[], int num)
-// {
-//     int i, rem, len = 0, n;
+void write_decimal(volatile unsigned long int number){
+    //Write Decimal Value
+    move_cursor(40);
+    word_to_string(ADC_value);
+    write_string(dec);
+}
 
-//     n = num;
-//     while (n != 0)
-//     {
-//         len++;
-//         n /= 10;
-//     }
-//     for (i = 0; i < len; i++)
-//     {
-//         rem = num % 10;
-//         num = num / 10;
-//         str[len - (i + 1)] = rem + '0';
-//     }
-//     str[len] = '\0';
-// }
+//Decimal array population
+void word_to_string(volatile unsigned long int number){
+    for(r = 0; r < 4; r++){
+      tostring(dec,(number));
+    }
+}
+
+//Change Value tostring
+void tostring(char str[], int num)
+{
+    int i, rem, len = 0, n;
+
+    n = num;
+    while (n != 0)
+    {
+        len++;
+        n /= 10;
+    }
+    for (i = 0; i < len; i++)
+    {
+        rem = num % 10;
+        num = num / 10;
+        str[len - (i + 1)] = rem + '0';
+    }
+    str[len] = '\0';
+}
 
 //Decimal to hexadecimal
 void decToHexa(volatile unsigned long int n)
@@ -161,11 +182,6 @@ __interrupt void ISR_Timer_A0_CCR0(void){
     ADC_value = ADC12MEM0;
     refresh = 1;
 }
-
-
-
-
-
 
 //----------------------------LCD-----------------------------------//
 
@@ -277,4 +293,3 @@ void init_LCD(){
     display_on();
     _delay_cycles(100000);
 }
-
