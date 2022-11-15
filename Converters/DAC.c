@@ -8,8 +8,7 @@
 /*
  * Data Converter Module
  * D0-D3 P3.0 - P3.3
- * D4-D6 P1.2 - P1.5
- * D7 P7.3
+ * D4-D7 P1.2 - P1.5
  *
  */
 
