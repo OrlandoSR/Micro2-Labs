@@ -7,8 +7,8 @@
 
 /*
  * Data Converter Module
- * D0-D3 P7.4-P7.7
- * D4-D6 P4.5.P4.7
+ * D0-D3 P3.0 - P3.3
+ * D4-D6 P1.2 - P1.5
  * D7 P7.3
  *
  */
@@ -34,8 +34,11 @@ int main(void)
 
 
   //Init Ports
-  P7DIR |= (BIT3 |BIT4 | BIT5 | BIT6 | BIT7);
-  P4DIR |= (BIT4 | BIT7);
+  P3DIR |= (BIT0 | BIT1 | BIT2 | BIT3);
+  P1DIR |= (BIT2 | BIT3 | BIT4 | BIT5);
+  P3OUT &=~ 0xFF;
+  P1OUT &=~ (BIT2 | BIT3 | BIT4 | BIT5);
+
 
 
     while(1){
@@ -51,58 +54,58 @@ void hex_to_ports(unsigned int num){ //Takes in value and translates for each po
 
   //D0
   if(num & BIT0){
-    P7OUT |= (BIT4);
+    P3OUT |= (BIT0);
   }else{
-    P7OUT &=~ (BIT4);
+    P3OUT &=~ (BIT0);
   }
 
   //D1
   if(num & BIT1){
-    P7OUT |= (BIT5);
+    P3OUT |= (BIT1);
   }else{
-    P7OUT &=~ (BIT5);
+    P3OUT &=~ (BIT1);
   }
 
   //D2
   if(num & BIT2){
-    P7OUT |= (BIT6);
+    P3OUT |= (BIT2);
   }else{
-    P7OUT &=~ (BIT6);
+    P3OUT &=~ (BIT2);
   }
 
   //D3
   if(num & BIT3){
-    P7OUT |= (BIT7);
+    P3OUT |= (BIT3);
   }else{
-    P7OUT &=~ (BIT7);
+    P3OUT &=~ (BIT3);
   }
 
   //D4
   if(num & BIT4){
-    P4OUT |= (BIT5);
+    P1OUT |= (BIT2);
   }else{
-    P4OUT &=~ (BIT5);
+      P1OUT &=~ (BIT2);
   }
 
   //D5
   if(num & BIT5){
-    P4OUT |= (BIT6);
+     P1OUT |= (BIT3);
   }else{
-    P4OUT &=~ (BIT6);
+     P1OUT &=~ (BIT3);
   }
 
   //D6
   if(num & BIT6){
-    P4OUT |= (BIT7);
+     P1OUT |= (BIT4);
   }else{
-    P4OUT &=~ (BIT7);
+     P1OUT &=~ (BIT4);
   }
 
   //D7
   if(num & BIT7){
-    P7OUT |= (BIT3);
+     P1OUT |= (BIT5);
   }else{
-    P7OUT &=~ (BIT3);
+     P1OUT &=~ (BIT5);
   }
 
 }
