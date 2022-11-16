@@ -12,11 +12,18 @@
  *
  */
 
+#define a (0)
+#define b (128)
+#define c (0)
+#define d (255)
+
 volatile unsigned long int i = 0;
-void hex_to_ports(unsigned int num);
+void input_to_ports(unsigned int num);
+void mapping(unsigned int num);
+volatile unsigned long int  IPT_value = 0;
 
 unsigned int DAC_values[12] = {0x00, 0x17, 0x2E, 0x45, 0x5C, 0x73, 0x8A, 0xA1, 0xB8, 0xCF, 0xE6, 0xFF};
-uint16_t values[4] = {0, 128, 255, 128};
+//uint16_t values[4] = {0, 128, 255, 128};
 
 
 int main(void)
@@ -25,10 +32,10 @@ int main(void)
 
   //Timer setup A0
     TA0CTL |= TBCLR;            //Reset timer in register TBxCTL |= TBCLR;
-    TA0CTL |= TBSSEL_1;         //Select clock source TBSSEL |= TBSSEL_ACLK;
+    TA0CTL |= TBSSEL__ACLK;    //Select clock source TBSSEL |= TBSSEL_ACLK;
     TA0CTL |= MC__UP;           //Select Timer/Counter in up mode to CCR0
-    TA0CCR0 |= 68;              //Compare register setup
-    TA0CTL |= ID__8;            //Set up prescaler div-8
+    TA0CCR0 |= 1;              //Compare register setup
+    TA0CTL |= ID__1;            //Set up prescaler div-8
 
     //Setup TA0 compare IRQ
     TA0CCTL0 |= CCIE;           //Local enable for CCR0
@@ -50,13 +57,19 @@ int main(void)
 //        for( i = 0; i < 12; i++){
 //            hex_to_ports(DAC_values[i]);
 //        }
-        hex_to_ports(values[i]);
+//        mapping(i);
+        input_to_ports(i);
     }
 }
 
+void mapping(unsigned int num){
+
+    IPT_value = ((num-a)/(b-a)) * ((d-c) + c);
+
+}
 
 
-void hex_to_ports(unsigned int num){ //Takes in value and translates for each port
+void input_to_ports(unsigned int num){ //Takes in value and translates for each port
 
   //D0
   if(num & BIT0){
@@ -113,13 +126,12 @@ void hex_to_ports(unsigned int num){ //Takes in value and translates for each po
   }else{
      P1OUT &=~ (BIT5);
   }
-
 }
 
 //----------------------------ISRs-----------------------------------//
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void ISR_Timer_A0_CCR0(void){
-    if(i > 4){i = 0;}
+    if(i > 255){i = 0;}
     i++;
 
 }
