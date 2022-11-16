@@ -24,11 +24,11 @@ const double c1 = 0;
 const double d1 = 255;
 
 const double a2 = 0;
-const double b2 = 255;
+const double b2 = 25;
 const double c2 = 0;
 const double d2 = (2*M_PI);
 
-#define SAMPLES 256
+#define SAMPLES 25
 
 volatile unsigned long int k = 0;
 volatile unsigned long int j = 0;
@@ -48,10 +48,10 @@ int main(void)
     WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
   //Timer setup A0
     TA0CTL |= TBCLR;            //Reset timer in register TBxCTL |= TBCLR;
-    TA0CTL |= TBSSEL__ACLK;    //Select clock source TBSSEL |= TBSSEL_ACLK;
+    TA0CTL |= TBSSEL__SMCLK;    //Select clock source TBSSEL |= TBSSEL_ACLK;
     TA0CTL |= MC__UP;           //Select Timer/Counter in up mode to CCR0
-    TA0CCR0 |= 16;              //Compare register setup
-    TA0CTL |= ID__1;            //Set up prescaler div-8
+    TA0CCR0 |= 10;              //Compare register setup
+    TA0CTL |= ID__8;            //Set up prescaler div-8
 
     //Setup TA0 compare IRQ
     TA0CCTL0 |= CCIE;           //Local enable for CCR0
@@ -101,7 +101,7 @@ double _8bit_to_radians(uint8_t num_in){
 
 void populate_array_sine(){
 
-    for(k = 0; k < 256; k++){
+    for(k = 0; k < 25; k++){
        values[k] = sin_to_8bit(sin(_8bit_to_radians(k)));
     }
 }
@@ -119,6 +119,7 @@ double mapping(double num){
 
 void input_to_ports(uint8_t num){ //Takes in value and translates for each port
 
+    __disable_interrupt();
   //D0
   if(num & BIT0){
     P3OUT |= (BIT0);
@@ -174,12 +175,13 @@ void input_to_ports(uint8_t num){ //Takes in value and translates for each port
   }else{
      P1OUT &=~ (BIT5);
   }
+  __enable_interrupt();
 }
 
 //----------------------------ISRs-----------------------------------//
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void ISR_Timer_A0_CCR0(void){
-    if(k > 255){k = 0;}
+    if(k > 25){k = 0;}
     k++;
 
 }
