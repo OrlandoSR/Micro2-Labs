@@ -109,11 +109,6 @@ int main(void)
 
         if(refresh){
 
-//            //Write Hexadecimal Value
-//            write_hexa_decimal(ADC_value);
-//            //Write Decimal Value
-//            write_decimal(ADC_value);
-
             //LED Brightness Change
             led_brightness(ADC_value);
             refresh = 0;
@@ -124,22 +119,22 @@ int main(void)
 //----------------------------LED/ADC--------------------------------//
 
 void led_brightness(volatile unsigned long int number){
-    if(number < 15){ //Congr. to OV
+    if(number < 50){ //Congr. to OV
 
         //LCD Level Warnings
         move_cursor(0);
-        write_string("Level 0");
+        write_string("Low Level");
         move_cursor(40);
         write_string("LP brightness");
 
-    }else if(number > 4075){ //Congr. to 3.3V
+    }else if(number > 3000){ //Congr. to 3.3V
 
         //LCD Level Warnings
         move_cursor(0);
-        write_string("Level 100");
+        write_string("MAX Level");
         move_cursor(40);
         write_string("MAX brightness");
-    }else if(number < 4075 || number > 15){
+    }else if(number < 3000 && number > 50){
         init_LCD();
     }
 
