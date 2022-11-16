@@ -1,5 +1,6 @@
 #include <msp430.h> 
 #include <stdint.h>
+#include <math.h>
 
 /**
  * main.c
@@ -12,34 +13,48 @@
  *
  */
 
-#define a (0)
-#define b (128)
-#define c (0)
-#define d (255)
+const double a = 0;
+const double b = 128;
+const double c = 0;
+const double d = 255;
 
-volatile unsigned long int i = 0;
-void input_to_ports(unsigned int num);
-void mapping(unsigned int num);
+const double a1 = -1;
+const double b1 = 1;
+const double c1 = 0;
+const double d1 = 255;
+
+const double a2 = 0;
+const double b2 = 255;
+const double c2 = 0;
+const double d2 = (2*M_PI);
+
+#define SAMPLES 256
+
+volatile unsigned long int k = 0;
+volatile unsigned long int j = 0;
+void input_to_ports(uint8_t num);
+double mapping(double num);
+void populate_array_sine();
 volatile unsigned long int  IPT_value = 0;
+double _8bit_to_radians(uint8_t num_in);
+uint8_t sin_to_8bit(double num_in);
 
 unsigned int DAC_values[12] = {0x00, 0x17, 0x2E, 0x45, 0x5C, 0x73, 0x8A, 0xA1, 0xB8, 0xCF, 0xE6, 0xFF};
-//uint16_t values[4] = {0, 128, 255, 128};
+uint16_t values[SAMPLES];
 
 
 int main(void)
 {
     WDTCTL = WDTPW | WDTHOLD;   // stop watchdog timer
-
   //Timer setup A0
     TA0CTL |= TBCLR;            //Reset timer in register TBxCTL |= TBCLR;
     TA0CTL |= TBSSEL__ACLK;    //Select clock source TBSSEL |= TBSSEL_ACLK;
     TA0CTL |= MC__UP;           //Select Timer/Counter in up mode to CCR0
-    TA0CCR0 |= 1;              //Compare register setup
+    TA0CCR0 |= 16;              //Compare register setup
     TA0CTL |= ID__1;            //Set up prescaler div-8
 
     //Setup TA0 compare IRQ
     TA0CCTL0 |= CCIE;           //Local enable for CCR0
-    __enable_interrupt();       //Enable maskable IRQs
     TA0CCTL0 &=~ CCIFG;         //Clear IRQ flags TA0CTL |= CCIFG;
 
 
@@ -51,6 +66,9 @@ int main(void)
   P3OUT &=~ 0xFF;
   P1OUT &=~ (BIT2 | BIT3 | BIT4 | BIT5);
 
+  populate_array_sine();
+
+  __enable_interrupt();       //Enable maskable IRQs
 
 
     while(1){
@@ -58,18 +76,48 @@ int main(void)
 //            hex_to_ports(DAC_values[i]);
 //        }
 //        mapping(i);
-        input_to_ports(i);
+        input_to_ports(values[k]);
     }
 }
 
-void mapping(unsigned int num){
+uint8_t sin_to_8bit(double num_in){
+    double res = 0;
 
-    IPT_value = ((num-a)/(b-a)) * ((d-c) + c);
+    res = ((num_in-a1)/(b1-a1)) * ((d1-c1) + c1);
 
+    return res;
+}
+
+double _8bit_to_radians(uint8_t num_in){
+
+    double res = 0;
+
+    res = ((num_in-a2)/(b2-a2)) * ((d2-c2) + c2);
+
+    return res;
 }
 
 
-void input_to_ports(unsigned int num){ //Takes in value and translates for each port
+
+void populate_array_sine(){
+
+    for(k = 0; k < 256; k++){
+       values[k] = sin_to_8bit(sin(_8bit_to_radians(k)));
+    }
+}
+
+
+double mapping(double num){
+
+    double res = 0;
+
+    res = ((num-a)/(b-a)) * ((d-c) + c);
+
+    return res;
+}
+
+
+void input_to_ports(uint8_t num){ //Takes in value and translates for each port
 
   //D0
   if(num & BIT0){
@@ -131,7 +179,7 @@ void input_to_ports(unsigned int num){ //Takes in value and translates for each 
 //----------------------------ISRs-----------------------------------//
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void ISR_Timer_A0_CCR0(void){
-    if(i > 255){i = 0;}
-    i++;
+    if(k > 255){k = 0;}
+    k++;
 
 }
