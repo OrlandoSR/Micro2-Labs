@@ -1,5 +1,5 @@
 #include <msp430.h> 
-
+#include <stdint.h>
 
 /**
  * main.c
@@ -16,6 +16,7 @@ volatile unsigned long int i = 0;
 void hex_to_ports(unsigned int num);
 
 unsigned int DAC_values[12] = {0x00, 0x17, 0x2E, 0x45, 0x5C, 0x73, 0x8A, 0xA1, 0xB8, 0xCF, 0xE6, 0xFF};
+uint16_t values[4] = {0, 128, 255, 128};
 
 
 int main(void)
@@ -26,9 +27,14 @@ int main(void)
     TA0CTL |= TBCLR;            //Reset timer in register TBxCTL |= TBCLR;
     TA0CTL |= TBSSEL_1;         //Select clock source TBSSEL |= TBSSEL_ACLK;
     TA0CTL |= MC__UP;           //Select Timer/Counter in up mode to CCR0
-    TA0CTL |= CNTL_0;           //Select counter length to 16-bit
     TA0CCR0 |= 68;              //Compare register setup
     TA0CTL |= ID__8;            //Set up prescaler div-8
+
+    //Setup TA0 compare IRQ
+    TA0CCTL0 |= CCIE;           //Local enable for CCR0
+    __enable_interrupt();       //Enable maskable IRQs
+    TA0CCTL0 &=~ CCIFG;         //Clear IRQ flags TA0CTL |= CCIFG;
+
 
 
 
@@ -41,9 +47,10 @@ int main(void)
 
 
     while(1){
-        for( i = 0; i < 12; i++){
-            hex_to_ports(DAC_values[i]);
-        }
+//        for( i = 0; i < 12; i++){
+//            hex_to_ports(DAC_values[i]);
+//        }
+        hex_to_ports(values[i]);
     }
 }
 
@@ -106,5 +113,13 @@ void hex_to_ports(unsigned int num){ //Takes in value and translates for each po
   }else{
      P1OUT &=~ (BIT5);
   }
+
+}
+
+//----------------------------ISRs-----------------------------------//
+#pragma vector = TIMER0_A0_VECTOR
+__interrupt void ISR_Timer_A0_CCR0(void){
+    if(i > 4){i = 0;}
+    i++;
 
 }
