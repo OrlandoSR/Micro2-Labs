@@ -1,0 +1,273 @@
+/*
+ * GccApplication2.cpp
+ *
+ * Created: 11/23/2022 12:24:25 PM
+ * Author : justin
+ */ 
+
+#include <avr/io.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <math.h>
+#ifndef F_CPU
+#define F_CPU 16000000UL // 16 MHz clock speed
+#endif
+#include <util/delay.h>
+
+//Analog input P7.6
+
+volatile unsigned long int ADC_value = 0;
+volatile unsigned long int j, k, r = 0;
+
+void tostring(char [], int);
+//----------------DHT11----------------------------//
+void DHT11_Data_loop();
+void start_signal();
+void responce_signal();
+int read_DHT11();
+uint8_t RH_I,RH_D,temp_I,temp_D,checksum;
+
+//----------------LCD----------------------------//
+unsigned char str[4];
+char dec[16];
+int pos = 0;
+volatile unsigned int refresh = 0;
+volatile unsigned long int i = 0;
+volatile int direction = 0;
+
+void display_string(int row);
+void function_clear();
+void send_enable();
+void display_off();
+void display_clear();
+void entry_mode();
+void function_set_cmd();
+void display_on();
+void init_LCD();
+void move_cursor(volatile unsigned long int target);
+void write_char (unsigned char data);
+void write_string(char *s);
+//---------------------------------------------//
+
+int main(void)
+{
+	
+	//-------Init LCD pins-------------------//
+	DDRA |= 0xFF;  //D0-D7 //
+	DDRC |= ((1 << PC0) | (1 << PC1));  //Enable | RS | RW (ground)    
+	//---------------------------------------//
+	
+	//------Init DHT11 pins------------------//
+	DDRD = 0xFF; //Not yet set
+	DDRB |= ((1 << PB0) | (1 << PB1)); //EN & RS
+	PORTB &= ~(1<<PB0);  //EN = 0
+	//---------------------------------------//
+	
+	init_LCD();
+
+    while(1){
+		
+		DHT11_Data_loop();
+// 		move_cursor(0);
+// 		write_string("Todo");
+// 		move_cursor(40);
+// 		write_string("Funciona");
+
+ 		init_LCD();
+
+	}
+}
+
+//Decimal array population
+void word_to_string(volatile unsigned long int number){
+    for(r = 0; r < 4; r++){
+      tostring(dec,(number));
+    }
+}
+
+//Change Value tostring
+void tostring(char str[], int num)
+{
+    int i, rem, len = 0, n;
+
+    n = num;
+    while (n != 0)
+    {
+        len++;
+        n /= 10;
+    }
+    for (i = 0; i < len; i++)
+    {
+        rem = num % 10;
+        num = num / 10;
+        str[len - (i + 1)] = rem + '0';
+    }
+    str[len] = '\0';
+}
+//----------------------------DHT11---------------------------------//
+void DHT11_Data_loop(){
+	_delay_ms(2000);   //Read DHT11 every 2s
+	start_signal();    //Send start signal from sensor
+	responce_signal(); //Recieve responce signal from sensor
+	
+	RH_I = read_DHT11();  //Read humidity (int)
+	RH_D = read_DHT11();  //Read humidity (fraction)
+	temp_I = read_DHT11();  //Read humidity (int)
+	temp_D = read_DHT11();  //Read humidity (fraction)
+	checksum = read_DHT11(); //Read check sum
+	
+	if((RH_I + RH_D + temp_I + temp_D) == checksum){
+		
+		move_cursor(0);
+		word_to_string(((int) RH_I));
+		write_string(strcat("Humidity = ", dec));
+		
+		move_cursor(40);
+		word_to_string(((int) temp_I));
+		write_string(strcat("Temperature = ", dec));
+		write_string();
+	}
+}
+
+void start_signal(){
+	DDRB |= (1<<PB2);    //PB2 as DHT11 data line
+	PORTB &= ~(1<<PB2);  //send low pulse
+	_delay_ms(20);
+	PORTB &= ~(1<<PB2);  //send high pulse
+}
+
+void responce_signal(){
+	DDRB &= ~(1<<PB2);			 //Set as input
+	while(PINB & (1<<PB2));	     //low pulse
+	while((PINB & (1<<PB2))==0); //high pulse
+	while(PINB & (1<<PB2));		 //low pulse
+}
+
+uint8_t read_DHT11(){ //Should be uint8_t
+	uint8_t dataByte = 0;
+	for(k=0;k<8; i++){
+		while((PINB & (1<<PB2))==0); //high pulse
+		_delay_us(50);
+		if(PINB & (1<<PB2)){ //Check Pulse to Store Value (1 or 0)
+			dataByte = (dataByte << 1) | (0x01);
+		}
+		else{
+			dataByte = (dataByte << 1);
+		}
+		while(PINB & (1<<PB2)); //low pulse
+		
+		return dataByte;
+	}
+}
+
+//----------------------------LCD-----------------------------------//
+
+void write_string(char *s){
+    while(*s){
+        write_char(*s);
+        s++;
+    }
+}
+
+void write_char(unsigned char data){
+
+    function_clear();
+
+	PORTC |= (1 << PC1); //RS
+
+    if(data == 0){
+      data = '0';
+    }
+	
+	//HMM
+	PORTA = data;
+	
+    send_enable();
+
+    pos++;
+}
+
+void move_cursor(volatile unsigned long int target){
+    function_clear();
+
+	PORTA |= (1 << PA4); 
+	
+    while(target != pos){
+        if(target > pos){
+			PORTA |= (1 << PA2);
+            send_enable();
+            pos++;
+
+        }else if(target < pos){
+			PORTA = (0 << PA2);
+            send_enable();
+            pos--;
+        }
+    }
+}
+
+void function_clear(){
+	PORTA &=~ 0xFF;
+	PORTC &=~ 0xFF;
+}
+
+void send_enable(){
+	
+	PORTC |= (1 << PC0); //Enable
+	_delay_ms(1);
+	PORTC &=~ (1 << PC0);
+}
+
+void display_off(){
+    function_clear();
+	PORTA |= (1 << PA3);
+    send_enable();
+}
+
+void display_clear(){
+    function_clear();
+	PORTA |= (1 << PA0);
+    send_enable();
+    pos = 0;
+}
+
+void entry_mode(){
+    function_clear();
+	PORTA |= ((1 << PA1) | (1 << PA2));
+    send_enable();
+}
+
+void function_set_cmd(){
+    function_clear();
+	PORTA |= ((1 << PA3) | (1 << PA4) | (1 << PA5));
+    send_enable();
+}
+
+void display_on(){
+    function_clear();
+	PORTA |= ((1 << PA0) | (1 << PA1) | (1 << PA2) | (1 << PA3));
+    send_enable();
+}
+
+void init_LCD(){
+	PORTC &=~ (1 << PC1); //RS
+    _delay_ms(100);
+    function_set_cmd();
+     _delay_ms(100);
+    function_set_cmd();
+     _delay_ms(100);
+    function_set_cmd();
+    _delay_ms(100);
+    function_set_cmd();
+     _delay_ms(100);
+    display_off();
+     _delay_ms(100);
+    display_clear();
+     _delay_ms(100);
+    entry_mode();
+     _delay_ms(100);
+    display_on();
+     _delay_ms(100);
+}
+
