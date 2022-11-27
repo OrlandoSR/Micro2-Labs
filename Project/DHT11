@@ -106,37 +106,9 @@ int main(void)
 	
 	init_LCD();
 	
-	//move_cursor(6);
-	//write_string("Todo");
-	//move_cursor(45);
-	//write_string("Funciona");
-	
-	//DHT11_Data_loop();
-	
     while (1) 
     {
-		//_delay_ms(1000);
-		//display_clear();
-// 		toString(dec, ADC_value);
-// 		write_string(dec);
-// 		_delay_ms(2000);
-// 		
-// 		//Send start signal
-// 		start_signal();
-// 		responce_signal();
-		
-// 		RH_I = read_DHT11();  //Read humidity (int)
-// 		RH_D = read_DHT11();  //Read humidity (fraction)
-// 		temp_I = read_DHT11();  //Read humidity (int)
-// 		temp_D = read_DHT11();  //Read humidity (fraction)
-// 		checksum = read_DHT11(); //Read check sum
-// 		
-// 		toString(dec, temp_I);		
-// 		write_string(dec);
-// 		toString(dec, temp_D);
-// 		write_string(dec);
-// 		write_string(" ");
-		DHT11_Data_loop();
+		DHT11_Data_loop(); //DHT11 Data
 		
     }
 }
@@ -346,9 +318,6 @@ void display_off(){
 }
 
 void display_clear(){
-	//function_clear();
-	//PORTA |= (1 << PA0);
-	//send_enable();
 	LCD_cmd(CLEAR_CMD);
 	pos = 0;
 }
