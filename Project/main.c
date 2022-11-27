@@ -36,6 +36,15 @@ void setupADC();
 void startConversion();
 int ADC_value = 0;
 
+//----------------DHT11----------------------------//
+void setupDHT11();
+void DHT11_Data_loop();
+void start_signal();
+void responce_signal();
+uint8_t read_DHT11();
+uint8_t RH_I,RH_D,temp_I,temp_D,checksum;
+uint8_t dataByte = 0;
+
 //----------------LCD----------------------------//
 unsigned char str[4];
 char dec[16];
@@ -68,6 +77,7 @@ int main(void)
 	PORTB = (0 << PB7);			//PB7 starts off
 	
 	
+	
 //-----------------------LCD setup-----------------------//
 	DDRA = (1 << PA0) | (1 << PA1) | (1 << PA2) | (1 << PA3) | (1 << PA4) | (1 << PA5) | (1 << PA6) | (1 << PA7);	//Entire port for sending 8bit data
 	DDRC = (1 << PC0) | (1 << PC1);			//PC0 is enable, PC1 is register select (RS), R/w is always low
@@ -81,9 +91,8 @@ int main(void)
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);	//8-bit mode
 	
 	
-//-----------------------ADC setup------------------------//
-
-
+//-----------------------DHT11 setup----------------------//
+	/*DDRB = 0xFF;*/
 	
 //---------------------Timer Init-------------------------//
 	TCCR0A = (1 << WGM01);		//Set  in CTC mode
@@ -92,8 +101,7 @@ int main(void)
 	
 	setupADC();
 	
-	
-	sei();						//Set external interrupt
+	//sei();						//Set external interrupt
 	
 	TCCR0B = (1 << CS02) | (1 << CS00); //Start at 1024 prescaler
 	
@@ -104,12 +112,32 @@ int main(void)
 	//move_cursor(45);
 	//write_string("Funciona");
 	
+	//DHT11_Data_loop();
+	
     while (1) 
     {
-		_delay_ms(1000);
+		//_delay_ms(1000);
 		//display_clear();
-		toString(dec, ADC_value);
+// 		toString(dec, ADC_value);
+// 		write_string(dec);
+		_delay_ms(2000);
+		
+		//Send start signal
+		start_signal();
+		responce_signal();
+		
+		RH_I = read_DHT11();  //Read humidity (int)
+		RH_D = read_DHT11();  //Read humidity (fraction)
+		temp_I = read_DHT11();  //Read humidity (int)
+		temp_D = read_DHT11();  //Read humidity (fraction)
+		checksum = read_DHT11(); //Read check sum
+		
+		toString(dec, temp_I);		
 		write_string(dec);
+		toString(dec, temp_D);
+		write_string(dec);
+		write_string(" ");
+		
     }
 }
 
@@ -138,6 +166,64 @@ void setupADC(){
 
 void startConversion(){
 	ADCSRA |= (1 << ADSC);
+}
+//--------------------------DHT11 setup-------------------------------//
+
+
+void DHT11_Data_loop(){
+	_delay_ms(2000);
+	start_signal();    //Send start signal from sensor
+	responce_signal(); //Recieve responce signal from sensor
+	
+	RH_I = read_DHT11();  //Read humidity (int)
+	RH_D = read_DHT11();  //Read humidity (fraction)
+	temp_I = read_DHT11();  //Read humidity (int)
+	temp_D = read_DHT11();  //Read humidity (fraction)
+	checksum = read_DHT11(); //Read check sum
+	
+	if((RH_I + RH_D + temp_I + temp_D) == checksum){
+		
+		move_cursor(0);
+		toString(dec,((int) RH_I));
+		write_string(dec);
+		
+		move_cursor(40);
+		toString(dec,((int) temp_I));
+		write_string(dec);
+	/*	write_string();*/
+	}
+}
+
+void start_signal(){
+		//Send start signal
+		DDRL |= (1<<PL0);
+		PORTL &= ~(1<<PL0);	/* set to low pin */
+		_delay_ms(20);		/* wait for 20ms */
+		PORTL |= (1<<PL0);	/* set to high pin */
+		DDRL &=~ (1<<PL0);	//Set as input
+}
+
+void responce_signal(){
+		while(PINL & (1<<PINL0));
+		while((PINL & (1<<PINL0))==0);
+		while(PINL & (1<<PINL0));
+}
+
+uint8_t read_DHT11(){ //Should be uint8_t
+	uint8_t dataByte = 0;
+	for(k=0;k<8; k++){
+		while((PINL & (1<<PL0))==0); //high pulse
+		_delay_us(50);
+		if(PINL & (1<<PL0)){ //Check Pulse to Store Value (1 or 0)
+			dataByte = (dataByte << 1) | (0x01);
+		}
+		else{
+			dataByte = (dataByte << 1);
+		}
+		while(PINL & (1<<PL0)); //low pulse
+		
+	}
+	return dataByte;
 }
 
 //--------------------------LCD Functions-----------------------------//
@@ -240,7 +326,7 @@ void function_clear(){
 void send_enable(){
 	
 	PORTC |= (1 << PC0); //Enable
-	_delay_ms(1);
+	_delay_us(10);
 	PORTC &=~ (1 << PC0);
 }
 
