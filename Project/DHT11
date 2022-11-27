@@ -27,6 +27,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <stdint-gcc.h>
+#include <string.h>
 
 
 volatile long int overflow = 0;
@@ -43,6 +44,7 @@ void start_signal();
 void responce_signal();
 uint8_t read_DHT11();
 uint8_t RH_I,RH_D,temp_I,temp_D,checksum;
+char str3[16];
 
 //----------------LCD----------------------------//
 unsigned char str[4];
@@ -154,7 +156,7 @@ void DHT11_Data_loop(){
 	checksum = read_DHT11(); //Read check sum
 	
 	if((RH_I + RH_D + temp_I + temp_D) == checksum){
-		
+		  
 		move_cursor(0);
 		write_string("Humidity: ");
 		
