@@ -2,7 +2,7 @@
  * Timers_C.c
  *
  * Created: 11/23/2022 4:26:38 PM
- * Author : orlan
+ * Author : Justin y Orlando
  */ 
 
 //PB7 is built in LED
@@ -27,23 +27,34 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <stdint-gcc.h>
+#include <string.h>
 
 
 volatile long int overflow = 0;
 
-//----------------ADC----------------------------//
+//----------------IR--------------------------------//
+volatile int currS1 = 0;
+volatile int currS2 = 0;
+volatile int prevS1 = 0;
+volatile int prevS2 = 0;
+volatile int crowd = 0;
+void readIR();
+void readCrowd();
+
+//----------------ADC-------------------------------//
 void setupADC();
 void startConversion();
 int ADC_value = 0;
+void readADC(int sensor);
 
-//----------------DHT11----------------------------//
+//----------------DHT11-----------------------------//
 void setupDHT11();
 void DHT11_Data_loop();
 void start_signal();
 void responce_signal();
 uint8_t read_DHT11();
 uint8_t RH_I,RH_D,temp_I,temp_D,checksum;
-uint8_t dataByte = 0;
+char str3[16];
 
 //----------------LCD----------------------------//
 unsigned char str[4];
@@ -70,12 +81,20 @@ void write_char (unsigned char data);
 void write_string(char *s);
 //---------------------------------------------//
 
+	
+int state;
+
 int main(void)
 {
 //-----------------------PORTS setup-----------------------//
 	DDRB = (1 << PB7);			//PB7 as output (built-in LED)
 	PORTB = (0 << PB7);			//PB7 starts off
 	
+	//Button
+	DDRH &=~ (1 << PH0);
+	
+	//IR
+	DDRE &=~ (1 << PE4) | (1 << PE5);
 	
 	
 //-----------------------LCD setup-----------------------//
@@ -101,43 +120,48 @@ int main(void)
 	
 	setupADC();
 	
-	//sei();						//Set external interrupt
+	sei();						//Set external interrupt
 	
 	TCCR0B = (1 << CS02) | (1 << CS00); //Start at 1024 prescaler
 	
 	init_LCD();
 	
-	//move_cursor(6);
-	//write_string("Todo");
-	//move_cursor(45);
-	//write_string("Funciona");
-	
-	//DHT11_Data_loop();
-	
     while (1) 
     {
-		//_delay_ms(1000);
-		//display_clear();
-// 		toString(dec, ADC_value);
-// 		write_string(dec);
-		_delay_ms(2000);
-		
-		//Send start signal
-		start_signal();
-		responce_signal();
-		
-		RH_I = read_DHT11();  //Read humidity (int)
-		RH_D = read_DHT11();  //Read humidity (fraction)
-		temp_I = read_DHT11();  //Read humidity (int)
-		temp_D = read_DHT11();  //Read humidity (fraction)
-		checksum = read_DHT11(); //Read check sum
-		
-		toString(dec, temp_I);		
-		write_string(dec);
-		toString(dec, temp_D);
-		write_string(dec);
-		write_string(" ");
-		
+		if(PINH & (1 << PINH0)){state=6;}
+		if(state > 6){state = 0;}
+			
+		readIR();
+			
+		switch (state)
+		{
+			case 0:
+				DHT11_Data_loop(); //DHT11 Data
+				break;
+			case 1:
+				readADC(0);
+				break;
+			case 2:
+				readADC(1);
+				break;
+			case 3:
+				readADC(2);
+				break;
+			case 4:
+				readADC(3);
+				break;
+			case 5:
+				readADC(4);
+				break;
+			case 6:
+				readCrowd();
+			break;
+			default:
+				//_delay_ms(1000);
+				//display_clear();
+				//write_string("Default State Reached");
+				break;
+		}
     }
 }
 
@@ -146,6 +170,7 @@ ISR(TIMER0_COMPA_vect){
 	
 	if(overflow > 100){
 		PORTB ^= (1 << PB7);			//Toggle built-in LED
+		state++;
 		overflow = 0;		
 	}
 }
@@ -157,7 +182,7 @@ ISR(ADC_vect){
 
 //--------------------------ADC setup----------------------------------//
 void setupADC(){
-	ADMUX = (1 << REFS0);						//AVcc as reference, A0 as input (PF0)
+	ADMUX |= (1 << REFS0);						//AVcc as reference, A0 as input (PF0)
 	ADCSRA = (1 << ADEN) | (1 << ADIE) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); //ADC Enabled with local interrupt enable and 1024 pre-scaler
 	DIDR0 = (1 << ADC5D);
 	
@@ -167,13 +192,133 @@ void setupADC(){
 void startConversion(){
 	ADCSRA |= (1 << ADSC);
 }
+
+void readADC(int sensor){
+	
+	ADCSRA &=~ (1 << ADEN);				//Disable ADC
+	
+	int sState = (PORTB & (1 << PB7));
+	
+	while(sState == (PORTB & (1 << PB7)));
+	
+	switch(sensor){
+		case 0:
+			ADMUX = (1 << REFS0);				//Read A0
+			DIDR0 = (1 << ADC0D);				//Disable digital buffer for A0 (optional)
+			setupADC();
+			_delay_ms(2);
+		
+			display_clear();
+			_delay_ms(1);
+			write_string("Light level is:");
+			move_cursor(40);
+			toString(dec, ADC);
+			write_string(dec);
+			break;
+		
+		case 1:
+			ADMUX = (1 << REFS0) | (1 << MUX0);	//Read A1
+			DIDR0 = (1 << ADC1D);				//Disable digital buffer for A1 (optional)
+			setupADC();
+			_delay_ms(2);
+		
+			display_clear();
+			_delay_ms(1);
+			write_string("Sound level is:");
+			move_cursor(40);
+			toString(dec, ADC);
+			write_string(dec);
+			break;
+		
+		case 2:
+			ADMUX = (1 << REFS0) | (1 << MUX1);	//Read A2
+			DIDR0 = (1 << ADC2D);				//Disable digital buffer for A1 (optional)
+			setupADC();
+			_delay_ms(2);
+				
+			display_clear();
+			_delay_ms(1);
+			write_string("MQ7 level is:");
+			move_cursor(40);
+			toString(dec, ADC);
+			write_string(dec);
+			break;
+
+		case 3:
+			ADMUX = (1 << REFS0) | (1 << MUX0) | (1 << MUX1);	//Read A3
+			DIDR0 = (1 << ADC2D);				//Disable digital buffer for A1 (optional)
+			setupADC();
+			_delay_ms(2);
+		
+			display_clear();
+			_delay_ms(1);
+			write_string("MQ2 level is:");
+			move_cursor(40);
+			toString(dec, ADC);
+			write_string(dec);
+			break;
+			
+		case 4:
+			ADMUX = (1 << REFS0) | (1 << MUX0) | (1 << MUX1);	//Read A3
+			DIDR0 = (1 << ADC2D);				//Disable digital buffer for A1 (optional)
+			setupADC();
+			_delay_ms(2);
+		
+			display_clear();
+			_delay_ms(1);
+			write_string("MQ5 level is:");
+			move_cursor(40);
+			toString(dec, ADC);
+			write_string(dec);
+			break;	
+			
+		default:
+			write_string("Default ADC case");
+			break;
+	}	
+
+}
+
+//--------------------------IR functions----------------------------------//
+void readIR(){
+	currS1 = (PINE & (1 << PINE5));
+	currS2 = (PINE & (1 << PINE4));
+	
+	if(currS1 != 0 && prevS1 != currS1){
+		crowd++;
+	}else if(currS2 != 0 && prevS2 != currS2){
+		crowd--;
+	}
+	
+	prevS1 = currS1;
+	prevS2 = currS2;
+}
+
+
+void readCrowd(){
+	int sState = (PORTB & (1 << PB7));
+	
+	while(sState == (PORTB & (1 << PB7)));
+	
+	display_clear();
+	_delay_ms(1);
+	write_string("Crowd is:");
+	move_cursor(40);
+	toString(dec, crowd);
+	write_string(dec);
+}
+
+
 //--------------------------DHT11 setup-------------------------------//
 
 
 void DHT11_Data_loop(){
-	_delay_ms(2000);
+	int sState = (PORTB & (1 << PB7));
+	
+	while(sState == (PORTB & (1 << PB7)));
+	
 	start_signal();    //Send start signal from sensor
-	responce_signal(); //Recieve responce signal from sensor
+	responce_signal(); //Recieve responce signal from sensors
 	
 	RH_I = read_DHT11();  //Read humidity (int)
 	RH_D = read_DHT11();  //Read humidity (fraction)
@@ -183,14 +328,24 @@ void DHT11_Data_loop(){
 	
 	if((RH_I + RH_D + temp_I + temp_D) == checksum){
 		
-		move_cursor(0);
-		toString(dec,((int) RH_I));
+		display_clear();
+		_delay_ms(1);
+		write_string("Humidity: ");
+		
+		toString(dec,RH_I);
 		write_string(dec);
 		
-		move_cursor(40);
-		toString(dec,((int) temp_I));
+		toString(dec,RH_D);
 		write_string(dec);
-	/*	write_string();*/
+		write_string("%");
+		
+		move_cursor(40);
+		write_string("Temperature: ");
+		
+		toString(dec,temp_I);
+		write_string(dec);
+		write_string("C");
+
 	}
 }
 
@@ -291,7 +446,6 @@ void write_char(unsigned char data){
 		data = '0';
 	}
 	
-	//HMM
 	PORTA = data;
 	
 	send_enable();
@@ -326,7 +480,7 @@ void function_clear(){
 void send_enable(){
 	
 	PORTC |= (1 << PC0); //Enable
-	_delay_us(10);
+	_delay_us(800);
 	PORTC &=~ (1 << PC0);
 }
 
@@ -337,9 +491,6 @@ void display_off(){
 }
 
 void display_clear(){
-	//function_clear();
-	//PORTA |= (1 << PA0);
-	//send_enable();
 	LCD_cmd(CLEAR_CMD);
 	pos = 0;
 }
