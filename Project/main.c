@@ -128,10 +128,12 @@ int main(void)
 	
     while (1) 
     {
-		if(PINH & (1 << PINH0)){state=6;}
+		if(PINH & (1 << PINH0)){state++;}
 		if(state > 6){state = 0;}
 			
 		readIR();
+		
+		//state = 6;					//Set fix state
 			
 		switch (state)
 		{
@@ -212,8 +214,16 @@ void readADC(int sensor){
 			_delay_ms(1);
 			write_string("Light level is:");
 			move_cursor(40);
-			toString(dec, ADC);
-			write_string(dec);
+			//toString(dec, ADC);
+			//write_string(dec);
+			if(ADC > 200){
+				write_string("Very Low");
+			}else if(ADC < 80){
+				write_string("Very High");
+			}else{
+				write_string("Normal");
+			}
+
 			break;
 		
 		case 1:
@@ -226,50 +236,72 @@ void readADC(int sensor){
 			_delay_ms(1);
 			write_string("Sound level is:");
 			move_cursor(40);
-			toString(dec, ADC);
-			write_string(dec);
+			//toString(dec, ADC);
+			//write_string(dec);
+			if(ADC < 200){
+				write_string("Very High");
+				}else if(ADC > 1000){
+				write_string("Very High");
+				}else{
+				write_string("Normal");
+			}
 			break;
 		
 		case 2:
 			ADMUX = (1 << REFS0) | (1 << MUX1);	//Read A2
-			DIDR0 = (1 << ADC2D);				//Disable digital buffer for A1 (optional)
+			DIDR0 = (1 << ADC2D);				//Disable digital buffer for A2 (optional)
 			setupADC();
 			_delay_ms(2);
 				
 			display_clear();
 			_delay_ms(1);
-			write_string("MQ7 level is:");
+			write_string("CO level is:");
 			move_cursor(40);
-			toString(dec, ADC);
-			write_string(dec);
+			//toString(dec, ADC);
+			//write_string(dec);
+			if(ADC < 100){
+				write_string("High");
+			}else{
+				write_string("Normal");
+			}
 			break;
 
 		case 3:
 			ADMUX = (1 << REFS0) | (1 << MUX0) | (1 << MUX1);	//Read A3
-			DIDR0 = (1 << ADC2D);				//Disable digital buffer for A1 (optional)
+			DIDR0 = (1 << ADC3D);				//Disable digital buffer for A3 (optional)
 			setupADC();
 			_delay_ms(2);
 		
 			display_clear();
 			_delay_ms(1);
-			write_string("MQ2 level is:");
+			write_string("Smoke level is:");
 			move_cursor(40);
-			toString(dec, ADC);
-			write_string(dec);
+			//toString(dec, ADC);
+			//write_string(dec);
+			if(ADC < 80){
+				write_string("High");
+			}else{
+				write_string("Normal");
+			}
 			break;
 			
 		case 4:
 			ADMUX = (1 << REFS0) | (1 << MUX0) | (1 << MUX1);	//Read A3
-			DIDR0 = (1 << ADC2D);				//Disable digital buffer for A1 (optional)
+			DIDR0 = (1 << ADC4D);				//Disable digital buffer for A4 (optional)
 			setupADC();
 			_delay_ms(2);
 		
 			display_clear();
 			_delay_ms(1);
-			write_string("MQ5 level is:");
+			write_string("Gas level is:");
 			move_cursor(40);
-			toString(dec, ADC);
-			write_string(dec);
+			//toString(dec, ADC);
+			//write_string(dec);
+			if(ADC < 80){
+				write_string("High");
+				}else{
+				write_string("Normal");
+			}
 			break;	
 			
 		default:
@@ -305,7 +337,13 @@ void readCrowd(){
 	write_string("Crowd is:");
 	move_cursor(40);
 	toString(dec, crowd);
-	write_string(dec);
+	if(crowd == 0){
+		write_string("None");
+	}else if(crowd < 0){
+		crowd = 0;
+	}else{
+		write_string(dec);
+	}
 }
 
 
