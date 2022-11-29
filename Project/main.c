@@ -32,6 +32,9 @@
 
 volatile long int overflow = 0;
 
+int alarm = 0;
+int alarmState = 0;
+
 //----------------IR--------------------------------//
 volatile int currS1 = 0;
 volatile int currS2 = 0;
@@ -40,6 +43,7 @@ volatile int prevS2 = 0;
 volatile int crowd = 0;
 void readIR();
 void readCrowd();
+
 
 //----------------ADC-------------------------------//
 void setupADC();
@@ -96,6 +100,9 @@ int main(void)
 	//IR
 	DDRE &=~ (1 << PE4) | (1 << PE5);
 	
+	//Buzzer
+	DDRH |= (1 << PH6);			//OC2B
+	
 	
 //-----------------------LCD setup-----------------------//
 	DDRA = (1 << PA0) | (1 << PA1) | (1 << PA2) | (1 << PA3) | (1 << PA4) | (1 << PA5) | (1 << PA6) | (1 << PA7);	//Entire port for sending 8bit data
@@ -113,28 +120,31 @@ int main(void)
 //-----------------------DHT11 setup----------------------//
 	/*DDRB = 0xFF;*/
 	
-//---------------------Timer Init-------------------------//
+//---------------------Timer0 Init-------------------------//
 	TCCR0A = (1 << WGM01);		//Set  in CTC mode
-	OCR0A = 195;				//Compare register value (0.01s)
+	OCR0A = 156;				//Compare register value (0.01s)
 	TIMSK0 = (1 << OCIE0A);		//Local interrupt enable 
 	
 	setupADC();
 	
 	sei();						//Set external interrupt
 	
-	TCCR0B = (1 << CS02) | (1 << CS00); //Start at 1024 prescaler
+	TCCR0B = (1 << CS02) | (0 << CS00); //Start at 256 prescaler
+	
 	
 	init_LCD();
 	
     while (1) 
     {
+
 		if(PINH & (1 << PINH0)){state++;}
 		if(state > 6){state = 0;}
+
 			
 		readIR();
 		
 		//state = 6;					//Set fix state
-			
+		
 		switch (state)
 		{
 			case 0:
@@ -169,13 +179,22 @@ int main(void)
 
 ISR(TIMER0_COMPA_vect){
 	overflow++;
+	if(alarm){
+		PORTH ^= (1 << PH6);
+	}
 	
-	if(overflow > 100){
+	if(overflow > 400){
+		
 		PORTB ^= (1 << PB7);			//Toggle built-in LED
-		state++;
+		if(!alarm){
+			state++;
+		}else{
+			state = alarmState;
+		}
 		overflow = 0;		
 	}
 }
+
 
 ISR(ADC_vect){
 		ADC_value = ADC;						//Send char  to the terminal
@@ -218,10 +237,13 @@ void readADC(int sensor){
 			//write_string(dec);
 			if(ADC > 200){
 				write_string("Very Low");
-			}else if(ADC < 80){
+			}else if(ADC < 150){
 				write_string("Very High");
+				alarm = 1;
+				alarmState = 1;
 			}else{
 				write_string("Normal");
+				alarm = 0;
 			}
 
 			break;
@@ -240,10 +262,13 @@ void readADC(int sensor){
 			//write_string(dec);
 			if(ADC < 200){
 				write_string("Very High");
+				alarm = 1;
 				}else if(ADC > 1000){
-				write_string("Very High");
+				write_string("Very Low");
 				}else{
 				write_string("Normal");
+				alarm = 0;
+				
 			}
 			break;
 		
@@ -261,8 +286,10 @@ void readADC(int sensor){
 			//write_string(dec);
 			if(ADC < 100){
 				write_string("High");
+				alarm = 1;
 			}else{
 				write_string("Normal");
+				alarm = 0;
 			}
 			break;
 
@@ -280,8 +307,10 @@ void readADC(int sensor){
 			//write_string(dec);
 			if(ADC < 80){
 				write_string("High");
+				alarm = 1;
 			}else{
 				write_string("Normal");
+				alarm = 0;
 			}
 			break;
 			
@@ -299,13 +328,16 @@ void readADC(int sensor){
 			//write_string(dec);
 			if(ADC < 80){
 				write_string("High");
+				alarm = 1;
 				}else{
 				write_string("Normal");
+				alarm = 0;
 			}
 			break;	
 			
 		default:
 			write_string("Default ADC case");
+			alarm = 0;
 			break;
 	}	
 
